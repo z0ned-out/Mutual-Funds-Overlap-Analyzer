@@ -67,8 +67,7 @@ def fetch_holdings(url):
 
     return df
 
-    except requests.exceptions.RequestException as e:
-        raise RuntimeError(f"Could not reach Apps Script: {str(e)}")
+
 
 
 # -------------------------------
