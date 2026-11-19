@@ -31,25 +31,30 @@ APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJugJaU6FR5M93sxZn-J
 # -------------------------------
 @st.cache_data(show_spinner=False)
 def fetch_holdings(url):
-    response = requests.get(APPS_SCRIPT_URL, params={"url": url})
-    data = response.json()
 
-    if isinstance(data, dict) and "error" in data:
-        return pd.DataFrame()
+    response = requests.get(
+        APPS_SCRIPT_URL,
+        params={"url": url},
+        timeout=60
+    )
 
-    df = pd.DataFrame(data)
+    print("HTTP Status:", response.status_code)
+    print("Content Type:", response.headers.get("Content-Type"))
+    print("Response URL:", response.url)
+    print("Response Preview:", response.text[:1500])
 
-    df = df.rename(columns={
-        "name": "Name",
-        "type": "Type",
-        "aum": "AUM",
-        "weight": "Weight"
-    })
+    response.raise_for_status()
 
-    df["AUM"] = pd.to_numeric(df["AUM"], errors="coerce")
-    df["Weight"] = pd.to_numeric(df["Weight"], errors="coerce") * 100
+    try:
+        data = response.json()
+    except ValueError:
+        raise Exception(
+            f"Apps Script did not return JSON.\n"
+            f"Status: {response.status_code}\n"
+            f"Response: {response.text[:1500]}"
+        )
 
-    return df
+    return pd.DataFrame(data)
 
 # -------------------------------
 # LOAD FUNDS
