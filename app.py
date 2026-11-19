@@ -64,7 +64,7 @@ def fetch_holdings(url):
             f"Missing columns: {missing}. "
             f"Actual columns received: {df.columns.tolist()}"
         )
-
+    df["Weight"] = pd.to_numeric(df["Weight"], errors="coerce") * 100
     return df
 
 
