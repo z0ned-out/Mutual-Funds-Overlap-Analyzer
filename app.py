@@ -30,31 +30,48 @@ APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJugJaU6FR5M93sxZn-J
 # FETCH HOLDINGS
 # -------------------------------
 @st.cache_data(show_spinner=False)
+
 def fetch_holdings(url):
-
-    response = requests.get(
-        APPS_SCRIPT_URL,
-        params={"url": url},
-        timeout=60
-    )
-
-    print("HTTP Status:", response.status_code)
-    print("Content Type:", response.headers.get("Content-Type"))
-    print("Response URL:", response.url)
-    print("Response Preview:", response.text[:1500])
-
-    response.raise_for_status()
-
     try:
-        data = response.json()
-    except ValueError:
-        raise Exception(
-            f"Apps Script did not return JSON.\n"
-            f"Status: {response.status_code}\n"
-            f"Response: {response.text[:1500]}"
+        response = requests.get(
+            APPS_SCRIPT_URL,
+            params={"url": url},
+            timeout=60,
+            allow_redirects=True
         )
 
-    return pd.DataFrame(data)
+        # Diagnostic information in Streamlit Cloud logs
+        print("HTTP STATUS:", response.status_code)
+        print("FINAL URL:", response.url)
+        print("CONTENT TYPE:", response.headers.get("Content-Type"))
+        print("RESPONSE BODY:", response.text[:2000])
+
+        # Check HTTP status before attempting JSON parsing
+        if not response.ok:
+            raise RuntimeError(
+                f"Apps Script HTTP error: {response.status_code}\n"
+                f"Content-Type: {response.headers.get('Content-Type')}\n"
+                f"Response: {response.text[:1500]}"
+            )
+
+        try:
+            data = response.json()
+        except ValueError:
+            raise RuntimeError(
+                "Apps Script returned a non-JSON response.\n"
+                f"Status: {response.status_code}\n"
+                f"Content-Type: {response.headers.get('Content-Type')}\n"
+                f"Response: {response.text[:1500]}"
+            )
+
+        if not isinstance(data, list):
+            raise RuntimeError(f"Unexpected JSON response: {str(data)[:1000]}")
+
+        return pd.DataFrame(data)
+
+    except requests.exceptions.RequestException as e:
+        raise RuntimeError(f"Could not reach Apps Script: {str(e)}")
+
 
 # -------------------------------
 # LOAD FUNDS
