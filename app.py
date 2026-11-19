@@ -31,43 +31,41 @@ APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyro4zvA9Z-BPJZs-INbg
 # -------------------------------
 @st.cache_data(show_spinner=False)
 
+
 def fetch_holdings(url):
-    try:
-        response = requests.get(
-            APPS_SCRIPT_URL,
-            params={"url": url},
-            timeout=60,
-            allow_redirects=True
+    response = requests.get(
+        APPS_SCRIPT_URL,
+        params={"url": url},
+        timeout=60
+    )
+    response.raise_for_status()
+
+    data = response.json()
+
+    if not isinstance(data, list) or not data:
+        raise ValueError(f"No holdings returned for: {url}")
+
+    df = pd.DataFrame(data)
+
+    # Standardise column names for the existing Streamlit UI
+    df = df.rename(columns={
+        "fund": "Fund",
+        "name": "Name",
+        "type": "Type",
+        "aum": "AUM",
+        "weight": "Weight"
+    })
+
+    required_columns = ["Name", "Type", "AUM", "Weight"]
+    missing = [col for col in required_columns if col not in df.columns]
+
+    if missing:
+        raise ValueError(
+            f"Missing columns: {missing}. "
+            f"Actual columns received: {df.columns.tolist()}"
         )
 
-        # Diagnostic information in Streamlit Cloud logs
-        print("HTTP STATUS:", response.status_code)
-        print("FINAL URL:", response.url)
-        print("CONTENT TYPE:", response.headers.get("Content-Type"))
-        print("RESPONSE BODY:", response.text[:2000])
-
-        # Check HTTP status before attempting JSON parsing
-        if not response.ok:
-            raise RuntimeError(
-                f"Apps Script HTTP error: {response.status_code}\n"
-                f"Content-Type: {response.headers.get('Content-Type')}\n"
-                f"Response: {response.text[:1500]}"
-            )
-
-        try:
-            data = response.json()
-        except ValueError:
-            raise RuntimeError(
-                "Apps Script returned a non-JSON response.\n"
-                f"Status: {response.status_code}\n"
-                f"Content-Type: {response.headers.get('Content-Type')}\n"
-                f"Response: {response.text[:1500]}"
-            )
-
-        if not isinstance(data, list):
-            raise RuntimeError(f"Unexpected JSON response: {str(data)[:1000]}")
-
-        return pd.DataFrame(data)
+    return df
 
     except requests.exceptions.RequestException as e:
         raise RuntimeError(f"Could not reach Apps Script: {str(e)}")
