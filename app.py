@@ -24,7 +24,7 @@ def center_heading(text, level=2):
 def fund_label(name):
     return f"<div style='text-align:center; font-size:13px; font-weight:600; margin-bottom:6px;'>{name}</div>"
 
-APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJugJaU6FR5M93sxZn-JlYgP2X-7VbHmcFH-6uDc3CqKHJXXIfanbCaUYZyLNFiib_/exec"
+APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyro4zvA9Z-BPJZs-INbg914A_TXcjgJCeYtYJfZivgZMCPb2G8Wpvs9E_a7kRHBi-0/exec"
 
 # -------------------------------
 # FETCH HOLDINGS
